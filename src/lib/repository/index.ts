@@ -1,1 +1,5 @@
-// placeholder — se implementa en Prompt 2
+import type { Repository } from './types';
+import { LocalRepository } from './local';
+
+export const repo: Repository = new LocalRepository();
+export type { Repository };
