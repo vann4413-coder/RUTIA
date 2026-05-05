@@ -3,6 +3,7 @@ import { useRouteStore } from './store/routeStore';
 import { StopForm } from './components/StopForm';
 import { StopList } from './components/StopList';
 import { RouteMap } from './components/RouteMap';
+import { TemplateManager } from './components/TemplateManager';
 
 function App() {
   const currentRoute = useRouteStore((s) => s.currentRoute);
@@ -14,6 +15,7 @@ function App() {
 
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
+  const [showTemplates, setShowTemplates] = useState(false);
 
   function startEditName() {
     setNameValue(currentRoute?.name ?? '');
@@ -34,7 +36,7 @@ function App() {
 
   if (!currentRoute) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-gray-50 p-6">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gray-50 p-6">
         <h1 className="text-4xl font-bold text-[#0EA5A0]">Rutia</h1>
         <p className="text-center text-gray-500">Tus rutas, en orden.</p>
         <button
@@ -43,6 +45,13 @@ function App() {
         >
           Nueva ruta
         </button>
+        <button
+          onClick={() => setShowTemplates(true)}
+          className="rounded-xl border border-gray-300 px-8 py-3 text-base font-medium text-gray-600 hover:bg-gray-100"
+        >
+          Cargar plantilla
+        </button>
+        {showTemplates && <TemplateManager onClose={() => setShowTemplates(false)} />}
       </div>
     );
   }
@@ -50,12 +59,12 @@ function App() {
   return (
     <div className="flex h-screen flex-col bg-gray-50 md:flex-row">
 
-      {/* ── Mobile: mapa sticky arriba al 50% ── Desktop: mapa izquierda 60% ── */}
+      {/* Mapa */}
       <div className="h-[50vh] shrink-0 md:h-full md:w-[60%]">
         <RouteMap />
       </div>
 
-      {/* ── Panel derecho / inferior ── */}
+      {/* Panel */}
       <div className="flex min-h-0 flex-1 flex-col md:w-[40%] md:border-l md:border-gray-200">
 
         {/* Header */}
@@ -87,19 +96,29 @@ function App() {
                 </p>
               )}
             </div>
-            <button
-              onClick={() => {
-                if (
-                  !currentRoute.stops.length ||
-                  window.confirm('¿Crear una nueva ruta? La actual se guardará.')
-                ) {
-                  newRoute('Mi ruta');
-                }
-              }}
-              className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
-            >
-              Nueva ruta
-            </button>
+            <div className="flex shrink-0 gap-1">
+              <button
+                onClick={() => setShowTemplates(true)}
+                aria-label="Gestionar plantillas"
+                title="Plantillas"
+                className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                📋
+              </button>
+              <button
+                onClick={() => {
+                  if (
+                    !currentRoute.stops.length ||
+                    window.confirm('¿Crear una nueva ruta? La actual se guardará.')
+                  ) {
+                    newRoute('Mi ruta');
+                  }
+                }}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Nueva
+              </button>
+            </div>
           </div>
         </header>
 
@@ -146,6 +165,8 @@ function App() {
           <StopList />
         </div>
       </div>
+
+      {showTemplates && <TemplateManager onClose={() => setShowTemplates(false)} />}
     </div>
   );
 }
