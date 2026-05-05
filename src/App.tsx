@@ -4,6 +4,7 @@ import { StopForm } from './components/StopForm';
 import { StopList } from './components/StopList';
 import { RouteMap } from './components/RouteMap';
 import { TemplateManager } from './components/TemplateManager';
+import { openInGoogleMapsWeb, openInWazeWeb } from './lib/deeplinks';
 
 function App() {
   const currentRoute = useRouteStore((s) => s.currentRoute);
@@ -163,6 +164,39 @@ function App() {
         {/* Stop list — scrollable */}
         <div className="flex-1 overflow-y-auto">
           <StopList />
+
+          {/* Deeplinks — solo con ruta optimizada */}
+          {currentRoute.optimizedOrder && currentRoute.stops.length >= 2 && (
+            <div className="flex flex-col gap-2 px-4 pb-6 pt-2">
+              <a
+                href={openInGoogleMapsWeb(
+                  currentRoute.optimizedOrder
+                    .map((id) => currentRoute.stops.find((s) => s.id === id))
+                    .filter((s): s is NonNullable<typeof s> => s !== undefined),
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-base font-semibold text-white shadow-sm active:scale-[0.98]"
+              >
+                Abrir en Google Maps
+              </a>
+              <a
+                href={openInWazeWeb(
+                  currentRoute.optimizedOrder
+                    .map((id) => currentRoute.stops.find((s) => s.id === id))
+                    .filter((s): s is NonNullable<typeof s> => s !== undefined),
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white py-3 text-base font-medium text-gray-700 shadow-sm active:scale-[0.98]"
+              >
+                Abrir en Waze
+              </a>
+              <p className="text-center text-xs text-gray-400">
+                Waze abre la primera parada pendiente. Continúa el resto manualmente.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
