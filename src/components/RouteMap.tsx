@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useRouteStore } from '../store/routeStore';
+import { reverseGeocode } from '../lib/mapbox';
 import type { Stop } from '../types/domain';
 
 const KEY = import.meta.env['VITE_MAPTILER_KEY'] as string | undefined;
@@ -21,8 +22,10 @@ export function RouteMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
 
   const currentRoute = useRouteStore((s) => s.currentRoute);
+  const addStop = useRouteStore((s) => s.addStop);
 
   const orderedStops: Stop[] = (() => {
     if (!currentRoute) return [];
@@ -34,26 +37,43 @@ export function RouteMap() {
     return currentRoute.stops;
   })();
 
+  // Init mapa
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     if (!KEY) return;
 
-    // Mapbox GL JS es compatible con estilos de Maptiler
-    mapboxgl.accessToken = 'no-token'; // requerido por la lib pero no usado con estilos externos
+    mapboxgl.accessToken = 'no-token';
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${KEY}`,
       center: [MATARO.lng, MATARO.lat],
       zoom: 13,
     });
+
+    // Clic en el mapa → añadir parada por reverse geocoding
+    map.on('click', async (e) => {
+      if (!useRouteStore.getState().currentRoute) return;
+      const { lng, lat } = e.lngLat;
+      setIsAdding(true);
+      try {
+        const result = await reverseGeocode(lng, lat);
+        if (result) {
+          await addStop(result.placeName);
+        }
+      } finally {
+        setIsAdding(false);
+      }
+    });
+
     mapRef.current = map;
 
     return () => {
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [addStop]);
 
+  // Actualizar marcadores y línea de ruta
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -101,11 +121,8 @@ export function RouteMap() {
         });
       };
 
-      if (map.isStyleLoaded()) {
-        addLine();
-      } else {
-        map.once('load', addLine);
-      }
+      if (map.isStyleLoaded()) addLine();
+      else map.once('load', addLine);
     }
 
     if (orderedStops.length === 1) {
@@ -125,12 +142,27 @@ export function RouteMap() {
   if (!KEY) {
     return (
       <div className="flex h-full items-center justify-center bg-gray-100 p-4 text-center text-sm text-gray-500">
-        Clave de Maptiler no configurada. Crea{' '}
-        <code className="rounded bg-gray-200 px-1">.env.local</code> con{' '}
-        <code className="rounded bg-gray-200 px-1">VITE_MAPTILER_KEY</code>.
+        Clave de Maptiler no configurada.
       </div>
     );
   }
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+      {/* Indicador de carga al añadir por clic */}
+      {isAdding && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-lg">
+          <span className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-[#0EA5A0] border-t-transparent" />
+          Añadiendo parada…
+        </div>
+      )}
+      {/* Hint para el usuario */}
+      {currentRoute && !isAdding && (
+        <div className="pointer-events-none absolute bottom-4 right-4 rounded-lg bg-white/80 px-3 py-1.5 text-xs text-gray-500 shadow">
+          Toca el mapa para añadir una parada
+        </div>
+      )}
+    </div>
+  );
 }

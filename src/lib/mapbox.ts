@@ -65,6 +65,24 @@ export async function geocode(
   };
 }
 
+export async function reverseGeocode(lng: number, lat: number): Promise<GeocodeResult | null> {
+  if (!KEY) return null;
+  try {
+    const res = await fetch(
+      `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${KEY}&language=es`,
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      features?: { place_name: string; center: [number, number] }[];
+    };
+    const feature = data.features?.[0];
+    if (!feature) return null;
+    return { placeName: feature.place_name, lng: feature.center[0], lat: feature.center[1] };
+  } catch {
+    return null;
+  }
+}
+
 export async function geocodeSuggestions(
   query: string,
   proximity?: { lng: number; lat: number },
