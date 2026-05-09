@@ -59,7 +59,7 @@ export const useRouteStore = create<RouteState & RouteActions>((set, get) => ({
       const result = await geocode(address, proximity);
       const stop: Stop = {
         id: uid(),
-        address: result.placeName,
+        address: address, // texto exacto que escribió el usuario
         lng: result.lng,
         lat: result.lat,
         visited: false,
