@@ -4,7 +4,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useRouteStore } from '../store/routeStore';
 import type { Stop } from '../types/domain';
 
-const TOKEN = import.meta.env['VITE_MAPBOX_TOKEN'] as string | undefined;
+const KEY = import.meta.env['VITE_MAPTILER_KEY'] as string | undefined;
 
 const MATARO = { lng: 2.4449, lat: 41.5388 };
 
@@ -34,15 +34,15 @@ export function RouteMap() {
     return currentRoute.stops;
   })();
 
-  // Init map
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    if (!TOKEN) return;
+    if (!KEY) return;
 
-    mapboxgl.accessToken = TOKEN;
+    // Mapbox GL JS es compatible con estilos de Maptiler
+    mapboxgl.accessToken = 'no-token'; // requerido por la lib pero no usado con estilos externos
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${KEY}`,
       center: [MATARO.lng, MATARO.lat],
       zoom: 13,
     });
@@ -54,16 +54,13 @@ export function RouteMap() {
     };
   }, []);
 
-  // Update markers + route line
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Clear old markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // Remove old route layer/source
     if (map.isStyleLoaded()) {
       if (map.getLayer('route-line')) map.removeLayer('route-line');
       if (map.getSource('route')) map.removeSource('route');
@@ -71,7 +68,6 @@ export function RouteMap() {
 
     if (orderedStops.length === 0) return;
 
-    // Add markers
     orderedStops.forEach((stop, i) => {
       const marker = new mapboxgl.Marker({ element: makeMarkerEl(String(i + 1), stop.visited) })
         .setLngLat([stop.lng, stop.lat])
@@ -80,7 +76,6 @@ export function RouteMap() {
       markersRef.current.push(marker);
     });
 
-    // Draw route line when optimized
     if (currentRoute?.optimizedOrder && orderedStops.length >= 2) {
       const addLine = () => {
         if (map.getLayer('route-line')) map.removeLayer('route-line');
@@ -113,7 +108,6 @@ export function RouteMap() {
       }
     }
 
-    // fitBounds
     if (orderedStops.length === 1) {
       map.flyTo({ center: [orderedStops[0]!.lng, orderedStops[0]!.lat], zoom: 15 });
     } else {
@@ -128,11 +122,12 @@ export function RouteMap() {
     }
   }, [orderedStops, currentRoute?.optimizedOrder]);
 
-  if (!TOKEN) {
+  if (!KEY) {
     return (
       <div className="flex h-full items-center justify-center bg-gray-100 p-4 text-center text-sm text-gray-500">
-        Token de Mapbox no configurado. Crea <code className="rounded bg-gray-200 px-1">.env.local</code> con{' '}
-        <code className="rounded bg-gray-200 px-1">VITE_MAPBOX_TOKEN</code>.
+        Clave de Maptiler no configurada. Crea{' '}
+        <code className="rounded bg-gray-200 px-1">.env.local</code> con{' '}
+        <code className="rounded bg-gray-200 px-1">VITE_MAPTILER_KEY</code>.
       </div>
     );
   }
