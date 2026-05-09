@@ -65,6 +65,40 @@ export async function geocode(
   };
 }
 
+export async function geocodeSuggestions(
+  query: string,
+  proximity?: { lng: number; lat: number },
+): Promise<GeocodeResult[]> {
+  if (!KEY || query.trim().length < 3) return [];
+
+  const params = new URLSearchParams({
+    key: KEY,
+    language: 'es',
+    country: 'es',
+    limit: '5',
+  });
+  if (proximity) {
+    params.set('proximity', `${proximity.lng},${proximity.lat}`);
+  }
+
+  try {
+    const res = await fetch(
+      `https://api.maptiler.com/geocoding/${encodeURIComponent(query)}.json?${params}`,
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      features?: { place_name: string; center: [number, number] }[];
+    };
+    return (data.features ?? []).map((f) => ({
+      placeName: f.place_name,
+      lng: f.center[0],
+      lat: f.center[1],
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // Maptiler no tiene API de optimización — usamos siempre el algoritmo local TSP
 export async function optimizeRoute(stops: Stop[]): Promise<string[]> {
   return optimizeRouteLocal(stops);
