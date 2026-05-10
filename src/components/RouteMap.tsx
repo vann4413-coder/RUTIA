@@ -26,6 +26,7 @@ export function RouteMap() {
 
   const currentRoute = useRouteStore((s) => s.currentRoute);
   const addStop = useRouteStore((s) => s.addStop);
+  const updateStop = useRouteStore((s) => s.updateStop);
 
   const orderedStops: Stop[] = (() => {
     if (!currentRoute) return [];
