@@ -90,10 +90,19 @@ export function RouteMap() {
     if (orderedStops.length === 0) return;
 
     orderedStops.forEach((stop, i) => {
-      const marker = new mapboxgl.Marker({ element: makeMarkerEl(String(i + 1), stop.visited) })
+      const marker = new mapboxgl.Marker({
+        element: makeMarkerEl(String(i + 1), stop.visited),
+        draggable: true,
+      })
         .setLngLat([stop.lng, stop.lat])
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(stop.label ?? stop.address))
         .addTo(map);
+
+      marker.on('dragend', () => {
+        const { lng, lat } = marker.getLngLat();
+        updateStop(stop.id, { lng, lat });
+      });
+
       markersRef.current.push(marker);
     });
 
@@ -138,7 +147,7 @@ export function RouteMap() {
       );
       map.fitBounds(bounds, { padding: 60, maxZoom: 16 });
     }
-  }, [orderedStops, currentRoute?.optimizedOrder]);
+  }, [orderedStops, currentRoute?.optimizedOrder, updateStop]);
 
   if (!KEY) {
     return (
@@ -161,7 +170,9 @@ export function RouteMap() {
       {/* Hint para el usuario */}
       {currentRoute && !isAdding && (
         <div className="pointer-events-none absolute bottom-4 right-4 rounded-lg bg-white/80 px-3 py-1.5 text-xs text-gray-500 shadow">
-          Toca el mapa para añadir una parada
+          {currentRoute.stops.length > 0
+            ? 'Arrastra un marcador para ajustar su posición'
+            : 'Toca el mapa para añadir una parada'}
         </div>
       )}
     </div>
