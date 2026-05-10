@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useRouteStore } from './store/routeStore';
 import { StopForm } from './components/StopForm';
@@ -5,6 +6,7 @@ import { StopList } from './components/StopList';
 import { RouteMap } from './components/RouteMap';
 import { TemplateManager } from './components/TemplateManager';
 import { openInGoogleMapsWeb, openInWazeWeb } from './lib/deeplinks';
+import { NavMode } from './components/NavMode';
 
 function App() {
   const currentRoute = useRouteStore((s) => s.currentRoute);
@@ -17,6 +19,7 @@ function App() {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showNavMode, setShowNavMode] = useState(false);
 
   function startEditName() {
     setNameValue(currentRoute?.name ?? '');
@@ -98,6 +101,16 @@ function App() {
               )}
             </div>
             <div className="flex shrink-0 gap-1">
+              {currentRoute.optimizedOrder && (
+                <button
+                  onClick={() => setShowNavMode(true)}
+                  aria-label="Modo navegación"
+                  title="Modo navegación"
+                  className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  🧭
+                </button>
+              )}
               <button
                 onClick={() => setShowTemplates(true)}
                 aria-label="Gestionar plantillas"
@@ -201,6 +214,7 @@ function App() {
       </div>
 
       {showTemplates && <TemplateManager onClose={() => setShowTemplates(false)} />}
+      {showNavMode && <NavMode onClose={() => setShowNavMode(false)} />}
     </div>
   );
 }
