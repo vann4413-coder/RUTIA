@@ -95,7 +95,7 @@ export function StopForm() {
               setShowSuggestions(true);
             }}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            placeholder={isListening ? 'Escuchando…' : 'Añadir dirección...'}
+            placeholder={isListening ? 'Escuchando…' : 'Ej: Carrer de l\'Energia 11, Mataró'}
             disabled={isGeocoding}
             aria-label="Dirección de la parada"
             aria-autocomplete="list"

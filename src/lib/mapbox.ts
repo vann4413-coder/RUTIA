@@ -31,9 +31,10 @@ export async function geocode(
 
   const params = new URLSearchParams({
     key: KEY,
-    language: 'es',
+    language: 'ca,es',
     country: 'es',
     limit: '1',
+    types: 'address,poi',
   });
   if (proximity) {
     params.set('proximity', `${proximity.lng},${proximity.lat}`);
@@ -91,9 +92,10 @@ export async function geocodeSuggestions(
 
   const params = new URLSearchParams({
     key: KEY,
-    language: 'es',
+    language: 'ca,es',
     country: 'es',
     limit: '5',
+    types: 'address,poi',
   });
   if (proximity) {
     params.set('proximity', `${proximity.lng},${proximity.lat}`);
