@@ -22,6 +22,7 @@ export function RouteMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const draggingMarkerRef = useRef(false);
   const [isAdding, setIsAdding] = useState(false);
 
   const currentRoute = useRouteStore((s) => s.currentRoute);
@@ -51,8 +52,9 @@ export function RouteMap() {
       zoom: 13,
     });
 
-    // Clic en el mapa → añadir parada por reverse geocoding
+    // Clic en el mapa → añadir parada (bloqueado si venimos de un drag)
     map.on('click', async (e) => {
+      if (draggingMarkerRef.current) return;
       if (!useRouteStore.getState().currentRoute) return;
       const { lng, lat } = e.lngLat;
       setIsAdding(true);
@@ -98,9 +100,14 @@ export function RouteMap() {
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(stop.label ?? stop.address))
         .addTo(map);
 
+      marker.on('dragstart', () => {
+        draggingMarkerRef.current = true;
+      });
       marker.on('dragend', () => {
         const { lng, lat } = marker.getLngLat();
         updateStop(stop.id, { lng, lat });
+        // Mantener flag activo brevemente para absorber el click que dispara el mouseup
+        setTimeout(() => { draggingMarkerRef.current = false; }, 200);
       });
 
       markersRef.current.push(marker);

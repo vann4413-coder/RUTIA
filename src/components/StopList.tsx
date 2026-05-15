@@ -15,14 +15,51 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useRouteStore } from '../store/routeStore';
+import { geocode } from '../lib/mapbox';
 import type { Stop } from '../types/domain';
 
 function StopDetail({ stop }: { stop: Stop }) {
   const updateStop = useRouteStore((s) => s.updateStop);
   const markVisited = useRouteStore((s) => s.markVisited);
+  const [addressValue, setAddressValue] = useState(stop.address);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  async function handleAddressBlur() {
+    const trimmed = addressValue.trim();
+    if (!trimmed || trimmed === stop.address) return;
+    setIsGeocoding(true);
+    setGeoError(null);
+    try {
+      const result = await geocode(trimmed);
+      updateStop(stop.id, { address: trimmed, lng: result.lng, lat: result.lat });
+    } catch {
+      setGeoError('No se encontró la dirección. Prueba con otra.');
+      setAddressValue(stop.address);
+    } finally {
+      setIsGeocoding(false);
+    }
+  }
 
   return (
     <div className="mt-2 flex flex-col gap-2 border-t border-gray-100 pt-2">
+      <div>
+        <label htmlFor={`address-${stop.id}`} className="mb-0.5 block text-xs font-medium text-gray-500">
+          Ubicación
+        </label>
+        <input
+          id={`address-${stop.id}`}
+          type="text"
+          value={addressValue}
+          onChange={(e) => setAddressValue(e.target.value)}
+          onBlur={() => void handleAddressBlur()}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
+          disabled={isGeocoding}
+          className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0EA5A0] disabled:opacity-50"
+        />
+        {isGeocoding && <p className="mt-0.5 text-xs text-gray-400">Buscando…</p>}
+        {geoError && <p className="mt-0.5 text-xs text-red-500">{geoError}</p>}
+      </div>
       <div>
         <label htmlFor={`label-${stop.id}`} className="mb-0.5 block text-xs font-medium text-gray-500">
           Alias (opcional)
